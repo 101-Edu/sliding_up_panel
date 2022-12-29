@@ -5,6 +5,6 @@ Purpose: Defines the package: aktiv_sliding_up_panel
 Copyright: © 2022, 101edu. All rights reserved.
 */
 
-library aktiv_sliding_up_panel;
+library sliding_up_panel;
 
 export 'src/panel.dart';
