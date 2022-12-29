@@ -6,10 +6,10 @@ Copyright: © 2020, Akshath Jain. All rights reserved.
 Licensing: More information can be found here: https://github.com/akshathjain/sliding_up_panel/blob/master/LICENSE
 */
 
-import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'dart:math';
 
+import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 
 enum SlideDirection {
@@ -18,6 +18,8 @@ enum SlideDirection {
 }
 
 enum PanelState { OPEN, CLOSED }
+
+enum GestureRegion { FULL, PANEL, HEADER }
 
 class SlidingUpPanel extends StatefulWidget {
   /// The Widget that slides into view. When the
@@ -159,6 +161,9 @@ class SlidingUpPanel extends StatefulWidget {
   /// by default the Panel is open and must be swiped closed by the user.
   final PanelState defaultPanelState;
 
+  /// This action disabled gestures on the panel body, Default is false
+  final bool disableGesturesOnPanel;
+
   SlidingUpPanel(
       {Key? key,
       this.panel,
@@ -195,8 +200,10 @@ class SlidingUpPanel extends StatefulWidget {
       this.slideDirection = SlideDirection.UP,
       this.defaultPanelState = PanelState.CLOSED,
       this.header,
-      this.footer})
+      this.footer,
+      this.disableGesturesOnPanel = false})
       : assert(panel != null || panelBuilder != null),
+        assert(panel != null && disableGesturesOnPanel),
         assert(0 <= backdropOpacity && backdropOpacity <= 1.0),
         assert(snapPoint == null || 0 < snapPoint && snapPoint < 1.0),
         super(key: key);
@@ -248,6 +255,7 @@ class _SlidingUpPanelState extends State<SlidingUpPanel>
 
   @override
   Widget build(BuildContext context) {
+    final panel = widget.panel;
     return Stack(
       alignment: widget.slideDirection == SlideDirection.UP
           ? Alignment.bottomCenter
@@ -308,6 +316,7 @@ class _SlidingUpPanelState extends State<SlidingUpPanel>
         !_isPanelVisible
             ? Container()
             : _gestureHandler(
+                region: GestureRegion.FULL,
                 child: AnimatedBuilder(
                   animation: _ac,
                   builder: (context, child) {
@@ -347,8 +356,9 @@ class _SlidingUpPanelState extends State<SlidingUpPanel>
                                   : 0),
                           child: Container(
                             height: widget.maxHeight,
-                            child: widget.panel != null
-                                ? widget.panel
+                            child: panel != null
+                                ? _gestureHandler(
+                                    child: panel, region: GestureRegion.PANEL)
                                 : widget.panelBuilder!(_sc),
                           )),
 
@@ -362,7 +372,9 @@ class _SlidingUpPanelState extends State<SlidingUpPanel>
                                   widget.slideDirection == SlideDirection.DOWN
                                       ? 0.0
                                       : null,
-                              child: widget.header ?? SizedBox(),
+                              child: _gestureHandler(
+                                  child: widget.header ?? SizedBox(),
+                                  region: GestureRegion.HEADER),
                             )
                           : Container(),
 
@@ -439,10 +451,14 @@ class _SlidingUpPanelState extends State<SlidingUpPanel>
   // and a listener if panelBuilder is used.
   // this is because the listener is designed only for use with linking the scrolling of
   // panels and using it for panels that don't want to linked scrolling yields odd results
-  Widget _gestureHandler({required Widget child}) {
+  Widget _gestureHandler(
+      {required Widget child, required GestureRegion region}) {
     if (!widget.isDraggable) return child;
 
     if (widget.panel != null) {
+      if (widget.disableGesturesOnPanel &&
+          (region == GestureRegion.PANEL || region == GestureRegion.FULL))
+        return child;
       return GestureDetector(
         onVerticalDragUpdate: (DragUpdateDetails dets) =>
             _onGestureSlide(dets.delta.dy),
