@@ -1,11 +1,10 @@
 /*
-Name: Akshath Jain
-Date: 3/30/19
-Purpose: Defines the package: sliding_up_panel
-Copyright: © 2019, Akshath Jain. All rights reserved.
-Licensing: More information can be found here: https://github.com/akshathjain/sliding_up_panel/blob/master/LICENSE
+Name: Risha Sringa Changmai
+Date: 29/12/2022
+Purpose: Defines the package: aktiv_sliding_up_panel
+Copyright: © 2022, 101edu. All rights reserved.
 */
 
-library sliding_up_panel;
+library aktiv_sliding_up_panel;
 
 export 'src/panel.dart';

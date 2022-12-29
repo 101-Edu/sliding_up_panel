@@ -1,4 +1,4 @@
-name: sliding_up_panel
+name: aktiv_sliding_up_panel
 description: A draggable Flutter widget that makes implementing a SlidingUpPanel much easier!
 version: 2.0.0+1
 homepage: https://github.com/akshathjain/sliding_up_panel
