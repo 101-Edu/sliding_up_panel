@@ -69,7 +69,7 @@ class _HomePageState extends State<HomePage> {
             parallaxEnabled: true,
             parallaxOffset: .5,
             body: _body(),
-            disableGesturesOnPanel: true,
+            draggable: DraggableRegion.HEADER,
             header: Container(
               height: 50,
               color: Colors.transparent,
