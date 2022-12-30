@@ -6,10 +6,10 @@ Copyright: © 2020, Akshath Jain. All rights reserved.
 Licensing: More information can be found here: https://github.com/akshathjain/sliding_up_panel/blob/master/LICENSE
 */
 
-import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'dart:math';
 
+import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 
 enum SlideDirection {
@@ -18,6 +18,10 @@ enum SlideDirection {
 }
 
 enum PanelState { OPEN, CLOSED }
+
+enum GestureRegion { FULL, PANEL, HEADER }
+
+enum DraggableRegion { NONE, FULL, HEADER }
 
 class SlidingUpPanel extends StatefulWidget {
   /// The Widget that slides into view. When the
@@ -143,9 +147,10 @@ class SlidingUpPanel extends StatefulWidget {
   final double parallaxOffset;
 
   /// Allows toggling of the draggability of the SlidingUpPanel.
-  /// Set this to false to prevent the user from being able to drag
-  /// the panel up and down. Defaults to true.
-  final bool isDraggable;
+  /// Set this to DraggableRegion.NONE to prevent the user from being able to drag
+  /// the panel up and down. Defaults to DraggableRegion.NONE.
+  /// DraggableRegion.HEADER will have drag events on header only
+  final DraggableRegion draggable;
 
   /// Either SlideDirection.UP or SlideDirection.DOWN. Indicates which way
   /// the panel should slide. Defaults to UP. If set to DOWN, the panel attaches
@@ -159,44 +164,45 @@ class SlidingUpPanel extends StatefulWidget {
   /// by default the Panel is open and must be swiped closed by the user.
   final PanelState defaultPanelState;
 
-  SlidingUpPanel(
-      {Key? key,
-      this.panel,
-      this.panelBuilder,
-      this.body,
-      this.collapsed,
-      this.minHeight = 100.0,
-      this.maxHeight = 500.0,
-      this.snapPoint,
-      this.border,
-      this.borderRadius,
-      this.boxShadow = const <BoxShadow>[
-        BoxShadow(
-          blurRadius: 8.0,
-          color: Color.fromRGBO(0, 0, 0, 0.25),
-        )
-      ],
-      this.color = Colors.white,
-      this.padding,
-      this.margin,
-      this.renderPanelSheet = true,
-      this.panelSnapping = true,
-      this.controller,
-      this.backdropEnabled = false,
-      this.backdropColor = Colors.black,
-      this.backdropOpacity = 0.5,
-      this.backdropTapClosesPanel = true,
-      this.onPanelSlide,
-      this.onPanelOpened,
-      this.onPanelClosed,
-      this.parallaxEnabled = false,
-      this.parallaxOffset = 0.1,
-      this.isDraggable = true,
-      this.slideDirection = SlideDirection.UP,
-      this.defaultPanelState = PanelState.CLOSED,
-      this.header,
-      this.footer})
-      : assert(panel != null || panelBuilder != null),
+  SlidingUpPanel({
+    Key? key,
+    this.panel,
+    this.panelBuilder,
+    this.body,
+    this.collapsed,
+    this.minHeight = 100.0,
+    this.maxHeight = 500.0,
+    this.snapPoint,
+    this.border,
+    this.borderRadius,
+    this.boxShadow = const <BoxShadow>[
+      BoxShadow(
+        blurRadius: 8.0,
+        color: Color.fromRGBO(0, 0, 0, 0.25),
+      )
+    ],
+    this.color = Colors.white,
+    this.padding,
+    this.margin,
+    this.renderPanelSheet = true,
+    this.panelSnapping = true,
+    this.controller,
+    this.backdropEnabled = false,
+    this.backdropColor = Colors.black,
+    this.backdropOpacity = 0.5,
+    this.backdropTapClosesPanel = true,
+    this.onPanelSlide,
+    this.onPanelOpened,
+    this.onPanelClosed,
+    this.parallaxEnabled = false,
+    this.parallaxOffset = 0.1,
+    this.draggable = DraggableRegion.NONE,
+    this.slideDirection = SlideDirection.UP,
+    this.defaultPanelState = PanelState.CLOSED,
+    this.header,
+    this.footer,
+  })  : assert(panel != null || panelBuilder != null),
+        assert(!(draggable == DraggableRegion.HEADER && panel == null)),
         assert(0 <= backdropOpacity && backdropOpacity <= 1.0),
         assert(snapPoint == null || 0 < snapPoint && snapPoint < 1.0),
         super(key: key);
@@ -240,7 +246,8 @@ class _SlidingUpPanelState extends State<SlidingUpPanel>
     // draggable and panel scrolling is enabled
     _sc = new ScrollController();
     _sc.addListener(() {
-      if (widget.isDraggable && !_scrollingEnabled) _sc.jumpTo(0);
+      if (widget.draggable == DraggableRegion.FULL && !_scrollingEnabled)
+        _sc.jumpTo(0);
     });
 
     widget.controller?._addState(this);
@@ -248,6 +255,7 @@ class _SlidingUpPanelState extends State<SlidingUpPanel>
 
   @override
   Widget build(BuildContext context) {
+    final panel = widget.panel;
     return Stack(
       alignment: widget.slideDirection == SlideDirection.UP
           ? Alignment.bottomCenter
@@ -308,6 +316,7 @@ class _SlidingUpPanelState extends State<SlidingUpPanel>
         !_isPanelVisible
             ? Container()
             : _gestureHandler(
+                region: GestureRegion.FULL,
                 child: AnimatedBuilder(
                   animation: _ac,
                   builder: (context, child) {
@@ -347,8 +356,9 @@ class _SlidingUpPanelState extends State<SlidingUpPanel>
                                   : 0),
                           child: Container(
                             height: widget.maxHeight,
-                            child: widget.panel != null
-                                ? widget.panel
+                            child: panel != null
+                                ? _gestureHandler(
+                                    child: panel, region: GestureRegion.PANEL)
                                 : widget.panelBuilder!(_sc),
                           )),
 
@@ -362,7 +372,9 @@ class _SlidingUpPanelState extends State<SlidingUpPanel>
                                   widget.slideDirection == SlideDirection.DOWN
                                       ? 0.0
                                       : null,
-                              child: widget.header ?? SizedBox(),
+                              child: _gestureHandler(
+                                  child: widget.header ?? SizedBox(),
+                                  region: GestureRegion.HEADER),
                             )
                           : Container(),
 
@@ -439,10 +451,14 @@ class _SlidingUpPanelState extends State<SlidingUpPanel>
   // and a listener if panelBuilder is used.
   // this is because the listener is designed only for use with linking the scrolling of
   // panels and using it for panels that don't want to linked scrolling yields odd results
-  Widget _gestureHandler({required Widget child}) {
-    if (!widget.isDraggable) return child;
+  Widget _gestureHandler(
+      {required Widget child, required GestureRegion region}) {
+    if (widget.draggable == DraggableRegion.NONE) return child;
 
     if (widget.panel != null) {
+      if (widget.draggable == DraggableRegion.HEADER &&
+          (region == GestureRegion.PANEL || region == GestureRegion.FULL))
+        return child;
       return GestureDetector(
         onVerticalDragUpdate: (DragUpdateDetails dets) =>
             _onGestureSlide(dets.delta.dy),

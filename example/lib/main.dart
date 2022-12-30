@@ -8,13 +8,12 @@ Licensing: More information can be found here: https://github.com/akshathjain/sl
 
 import 'dart:ui';
 
-import 'package:flutter/material.dart';
-import 'package:sliding_up_panel/sliding_up_panel.dart';
-import 'package:flutter/services.dart';
-
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong/latlong.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:sliding_up_panel/sliding_up_panel.dart';
 
 void main() => runApp(SlidingUpPanelExample());
 
@@ -70,7 +69,37 @@ class _HomePageState extends State<HomePage> {
             parallaxEnabled: true,
             parallaxOffset: .5,
             body: _body(),
-            panelBuilder: (sc) => _panel(sc),
+            draggable: DraggableRegion.HEADER,
+            header: Container(
+              height: 50,
+              color: Colors.transparent,
+              child: Center(
+                child: Text(
+                  'SlidingUpPanel Header',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+            footer: Container(
+              height: 50,
+              color: Colors.transparent,
+              child: Center(
+                child: Text(
+                  'SlidingUpPanel Footer',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+            //panelBuilder: (sc) => _panel(sc),
+            panel: _panel(),
             borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(18.0),
                 topRight: Radius.circular(18.0)),
@@ -129,12 +158,11 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _panel(ScrollController sc) {
+  Widget _panel() {
     return MediaQuery.removePadding(
         context: context,
         removeTop: true,
         child: ListView(
-          controller: sc,
           children: <Widget>[
             SizedBox(
               height: 12.0,
